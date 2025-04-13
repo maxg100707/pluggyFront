@@ -11,7 +11,9 @@ const EconomicNews = ({ trigger, country }) => {
   const fetchNews = async () => {
     setLoading(true);
     try {
-      // Buscar notícias exclusivamente da API
+      console.log(`Buscando notícias para ${country}...`);
+      
+      // Tentar buscar notícias do backend
       const response = await fetch(`${backendUrl}/news?country=${country}`, {
         headers: { 'country': country }
       });
@@ -22,20 +24,56 @@ const EconomicNews = ({ trigger, country }) => {
       
       const data = await response.json();
       
-      // Verificar se temos dados válidos
       if (!data || data.length === 0) {
-        throw new Error('Nenhuma notícia disponível na API');
+        throw new Error('Nenhuma notícia disponível');
       }
       
-      // Usar os dados exatamente como recebidos da API
+      console.log(`Recebidas ${data.length} notícias`);
       setNews(data);
       setError(null);
-      
-      console.log('Notícias carregadas da API:', data);
     } catch (err) {
       console.error('Erro ao buscar notícias:', err);
       setError(err.message);
-      setNews([]);
+      
+      // Se falhar, tentar buscar diretamente de uma API pública alternativa
+      try {
+        console.log('Tentando API alternativa...');
+        
+        // Usar uma API pública de notícias como fallback
+        const altUrl = country.toLowerCase() === 'brazil'
+          ? 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fg1.globo.com%2Frss%2Fg1%2Feconomia%2F'
+          : 'https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fwww.clarin.com%2Frss%2Feconomia%2F';
+        
+        const altResponse = await fetch(altUrl);
+        
+        if (!altResponse.ok) {
+          throw new Error('API alternativa também falhou');
+        }
+        
+        const altData = await altResponse.json();
+        
+        if (altData && altData.items && altData.items.length > 0) {
+          // Mapear para o formato esperado
+          const mappedNews = altData.items.map(item => ({
+            title: item.title,
+            source: altData.feed.title,
+            url: item.link,
+            publishedAt: item.pubDate,
+            description: item.description ? stripHtml(item.description) : '',
+            imageUrl: item.enclosure ? item.enclosure.link : item.thumbnail
+          }));
+          
+          console.log(`Recebidas ${mappedNews.length} notícias da API alternativa`);
+          setNews(mappedNews);
+          setError(null);
+        } else {
+          throw new Error('Nenhuma notícia encontrada na API alternativa');
+        }
+      } catch (altErr) {
+        console.error('Erro na API alternativa:', altErr);
+        setError('Não foi possível carregar notícias. Tente novamente mais tarde.');
+        setNews([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -46,10 +84,20 @@ const EconomicNews = ({ trigger, country }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trigger, country]);
 
+  // Remove tags HTML de uma string
+  const stripHtml = (html) => {
+    if (!html) return '';
+    return html.replace(/<\/?[^>]+(>|$)/g, '').trim();
+  };
+
   // Formata a data de publicação
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return dateString;
+    }
   };
 
   // Alterna a expansão de uma notícia
@@ -63,14 +111,14 @@ const EconomicNews = ({ trigger, country }) => {
     
     // Verificamos se a URL é válida
     if (!url || url === '#') {
-      console.error('URL inválida ou não fornecida pela API:', url);
+      console.error('URL inválida:', url);
       alert('Link para a notícia não disponível');
       return;
     }
     
     // Abrimos a URL em uma nova janela
     window.open(url, '_blank', 'noopener,noreferrer');
-    console.log('Abrindo URL da API:', url);
+    console.log('Abrindo URL:', url);
   };
 
   // Função para verificar se uma URL é válida
@@ -92,7 +140,7 @@ const EconomicNews = ({ trigger, country }) => {
       
       {error ? (
         <div className="news-error">
-          <p>Erro ao carregar notícias: {error}</p>
+          <p>{error}</p>
           <button className="news-retry-button" onClick={fetchNews}>
             Tentar novamente
           </button>
@@ -138,15 +186,13 @@ const EconomicNews = ({ trigger, country }) => {
                 <div className="news-content">
                   <p className="news-description">{item.description || 'Sem descrição disponível'}</p>
                   
-                  {isValidUrl(item.url) ? (
+                  {isValidUrl(item.url) && (
                     <button 
                       className="news-link-button"
                       onClick={(e) => openNewsUrl(item.url, e)}
                     >
                       Ler matéria completa
                     </button>
-                  ) : (
-                    <p className="news-no-link">Link para a notícia não disponível</p>
                   )}
                 </div>
               )}
