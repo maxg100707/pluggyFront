@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
+// Imagem de placeholder embutida como base64
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMzAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2UwZTBlMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwsIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIGZpbGw9IiM2NjY2NjYiPk5vdMOtY2lhPC90ZXh0Pjwvc3ZnPg==';
+
 const backendUrl = "https://pluggy.onrender.com";
 
 const EconomicNews = ({ trigger, country }) => {
@@ -160,18 +163,16 @@ const EconomicNews = ({ trigger, country }) => {
             <div key={index} className={`news-item ${expandedNews === index ? 'expanded' : ''}`}>
               {/* Área clicável para expandir/colapsar */}
               <div className="news-header" onClick={() => toggleExpand(index)}>
-                {item.imageUrl && (
-                  <div className="news-image">
-                    <img 
-                      src={item.imageUrl} 
-                      alt={item.title}
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = 'https://placehold.co/300x200/e0e0e0/666666?text=Notícia';
-                      }}
-                    />
-                  </div>
-                )}
+                <div className="news-image">
+                  <img 
+                    src={item.imageUrl || PLACEHOLDER_IMAGE} 
+                    alt={item.title}
+                    onError={(e) => {
+                      e.target.onerror = null; // Prevenir loop infinito
+                      e.target.src = PLACEHOLDER_IMAGE;
+                    }}
+                  />
+                </div>
                 <div className="news-info">
                   <h3 className="news-title">{item.title}</h3>
                   <div className="news-meta">
