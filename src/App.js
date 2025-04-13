@@ -18,7 +18,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Pluggy Challenge Dashboard</h1>
+        <h1>Pluggy Challenge</h1>
       </header>
       <main>
         <Quotes trigger={updateTrigger} />
