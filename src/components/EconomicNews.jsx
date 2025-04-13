@@ -20,7 +20,19 @@ const EconomicNews = ({ trigger, country }) => {
       }
       
       const data = await response.json();
-      setNews(data);
+      
+      // Verificamos se as URLs são válidas e substituímos se necessário
+      const processedData = data.map(item => ({
+        ...item,
+        // Se a URL for '#' ou inválida, substituímos por uma URL padrão
+        url: (item.url && item.url !== '#') 
+          ? item.url 
+          : country.toLowerCase() === 'brazil'
+            ? 'https://www.infomoney.com.br/economia/'
+            : 'https://www.clarin.com/economia/'
+      }));
+      
+      setNews(processedData);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -44,6 +56,24 @@ const EconomicNews = ({ trigger, country }) => {
   // Alterna a expansão de uma notícia
   const toggleExpand = (index) => {
     setExpandedNews(expandedNews === index ? null : index);
+  };
+  
+  // Função para abrir a URL em uma nova janela
+  const openNewsUrl = (url, e) => {
+    e.stopPropagation(); // Impede a propagação do evento
+    
+    // Verificamos e corrigimos a URL se necessário
+    let validUrl = url;
+    if (!url || url === '#') {
+      validUrl = country.toLowerCase() === 'brazil'
+        ? 'https://www.infomoney.com.br/economia/'
+        : 'https://www.clarin.com/economia/';
+    }
+    
+    // Abrimos a URL em uma nova janela
+    window.open(validUrl, '_blank', 'noopener,noreferrer');
+    
+    console.log('Abrindo URL:', validUrl); // Debug
   };
 
   return (
@@ -79,18 +109,18 @@ const EconomicNews = ({ trigger, country }) => {
                 </div>
               </div>
               
-              {/* Conteúdo expandido - não recebe o evento de clique para expandir */}
+              {/* Conteúdo expandido */}
               {expandedNews === index && (
                 <div className="news-content">
                   <p className="news-description">{item.description}</p>
-                  <a 
-                    href={item.url} 
-                     
-                    rel="noopener noreferrer" 
-                    className="news-link"
+                  
+                  {/* Substituímos o link por um botão com handler explícito */}
+                  <button 
+                    className="news-link-button"
+                    onClick={(e) => openNewsUrl(item.url, e)}
                   >
                     Ler matéria completa
-                  </a>
+                  </button>
                 </div>
               )}
             </div>
