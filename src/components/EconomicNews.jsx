@@ -11,6 +11,7 @@ const EconomicNews = ({ trigger, country }) => {
   const fetchNews = async () => {
     setLoading(true);
     try {
+      // Buscar notícias exclusivamente da API
       const response = await fetch(`${backendUrl}/news?country=${country}`, {
         headers: { 'country': country }
       });
@@ -21,20 +22,18 @@ const EconomicNews = ({ trigger, country }) => {
       
       const data = await response.json();
       
-      // Verificamos se as URLs são válidas e substituímos se necessário
-      const processedData = data.map(item => ({
-        ...item,
-        // Se a URL for '#' ou inválida, substituímos por uma URL padrão
-        url: (item.url && item.url !== '#') 
-          ? item.url 
-          : country.toLowerCase() === 'brazil'
-            ? 'https://www.infomoney.com.br/economia/'
-            : 'https://www.clarin.com/economia/'
-      }));
+      // Verificar se temos dados válidos
+      if (!data || data.length === 0) {
+        throw new Error('Nenhuma notícia disponível na API');
+      }
       
-      setNews(processedData);
+      // Usar os dados exatamente como recebidos da API
+      setNews(data);
       setError(null);
+      
+      console.log('Notícias carregadas da API:', data);
     } catch (err) {
+      console.error('Erro ao buscar notícias:', err);
       setError(err.message);
       setNews([]);
     } finally {
@@ -62,18 +61,26 @@ const EconomicNews = ({ trigger, country }) => {
   const openNewsUrl = (url, e) => {
     e.stopPropagation(); // Impede a propagação do evento
     
-    // Verificamos e corrigimos a URL se necessário
-    let validUrl = url;
+    // Verificamos se a URL é válida
     if (!url || url === '#') {
-      validUrl = country.toLowerCase() === 'brazil'
-        ? 'https://www.infomoney.com.br/economia/'
-        : 'https://www.clarin.com/economia/';
+      console.error('URL inválida ou não fornecida pela API:', url);
+      alert('Link para a notícia não disponível');
+      return;
     }
     
     // Abrimos a URL em uma nova janela
-    window.open(validUrl, '_blank', 'noopener,noreferrer');
-    
-    console.log('Abrindo URL:', validUrl); // Debug
+    window.open(url, '_blank', 'noopener,noreferrer');
+    console.log('Abrindo URL da API:', url);
+  };
+
+  // Função para verificar se uma URL é válida
+  const isValidUrl = (url) => {
+    try {
+      new URL(url);
+      return url !== '#';
+    } catch (e) {
+      return false;
+    }
   };
 
   return (
@@ -84,11 +91,21 @@ const EconomicNews = ({ trigger, country }) => {
       </p>
       
       {error ? (
-        <p>Erro ao carregar notícias: {error}</p>
+        <div className="news-error">
+          <p>Erro ao carregar notícias: {error}</p>
+          <button className="news-retry-button" onClick={fetchNews}>
+            Tentar novamente
+          </button>
+        </div>
       ) : loading ? (
         <div className="news-loading">Carregando notícias econômicas...</div>
       ) : news.length === 0 ? (
-        <p>Nenhuma notícia disponível no momento.</p>
+        <div className="news-empty">
+          <p>Nenhuma notícia disponível no momento.</p>
+          <button className="news-retry-button" onClick={fetchNews}>
+            Tentar novamente
+          </button>
+        </div>
       ) : (
         <div className="news-list">
           {news.map((item, index) => (
@@ -97,7 +114,14 @@ const EconomicNews = ({ trigger, country }) => {
               <div className="news-header" onClick={() => toggleExpand(index)}>
                 {item.imageUrl && (
                   <div className="news-image">
-                    <img src={item.imageUrl} alt={item.title} />
+                    <img 
+                      src={item.imageUrl} 
+                      alt={item.title}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/300x200?text=Notícia';
+                      }}
+                    />
                   </div>
                 )}
                 <div className="news-info">
@@ -112,15 +136,18 @@ const EconomicNews = ({ trigger, country }) => {
               {/* Conteúdo expandido */}
               {expandedNews === index && (
                 <div className="news-content">
-                  <p className="news-description">{item.description}</p>
+                  <p className="news-description">{item.description || 'Sem descrição disponível'}</p>
                   
-                  {/* Substituímos o link por um botão com handler explícito */}
-                  <button 
-                    className="news-link-button"
-                    onClick={(e) => openNewsUrl(item.url, e)}
-                  >
-                    Ler matéria completa
-                  </button>
+                  {isValidUrl(item.url) ? (
+                    <button 
+                      className="news-link-button"
+                      onClick={(e) => openNewsUrl(item.url, e)}
+                    >
+                      Ler matéria completa
+                    </button>
+                  ) : (
+                    <p className="news-no-link">Link para a notícia não disponível</p>
+                  )}
                 </div>
               )}
             </div>
