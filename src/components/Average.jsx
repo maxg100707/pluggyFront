@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const backendUrl = "https://pluggy.onrender.com"; // Substitua conforme necessário
+const backendUrl = "https://pluggy.onrender.com";
 
 const Average = ({ trigger, country }) => {
   const [average, setAverage] = useState(null);
