@@ -167,7 +167,7 @@ const EconomicNews = ({ trigger, country }) => {
                       alt={item.title}
                       onError={(e) => {
                         e.target.onerror = null;
-                        e.target.src = 'https://via.placeholder.com/300x200?text=Notícia';
+                        e.target.src = 'https://placehold.co/300x200/e0e0e0/666666?text=Notícia';
                       }}
                     />
                   </div>
