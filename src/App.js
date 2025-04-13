@@ -3,7 +3,8 @@ import Quotes from "./components/Quotes";
 import Average from "./components/Average";
 import Slippage from "./components/Slippage";
 import CountrySelector from "./components/CountrySelector";
-import ExchangeRateChart from "./components/ExchangeRateChart"; // Importe o novo componente
+import ExchangeRateChart from "./components/ExchangeRateChart";
+import EconomicNews from "./components/EconomicNews"; // Importe o novo componente
 import "./App.css";
 
 function App() {
@@ -40,7 +41,6 @@ function App() {
           <p className="update-info">Atualização automática a cada 15 segundos. Última atualização: {new Date().toLocaleTimeString()}</p>
         </div>
         
-        {/* Adicione o componente de gráfico aqui */}
         <ExchangeRateChart trigger={updateTrigger} country={selectedCountry} />
         
         <div className="dashboard-grid">
@@ -48,6 +48,9 @@ function App() {
           <Average trigger={updateTrigger} country={selectedCountry} />
           <Slippage trigger={updateTrigger} country={selectedCountry} />
         </div>
+        
+        {/* Adicione o componente de notícias econômicas */}
+        <EconomicNews trigger={updateTrigger} country={selectedCountry} />
       </main>
       <footer>
         <p>Pluggy Challenge - Developed for testing purposes</p>
