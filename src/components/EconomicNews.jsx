@@ -85,15 +85,20 @@ const EconomicNews = ({ trigger, country }) => {
               {expandedNews === index && (
                 <div className="news-content">
                   <p className="news-description">{item.description}</p>
-                  <a 
-                    href={item.url} 
-                     
-                    rel="noopener noreferrer" 
-                    className="news-link"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    Ler matéria completa
-                  </a>
+                  // Modifique a parte do link no componente EconomicNews.jsx
+<a 
+  href={item.url} 
+   
+  rel="noopener noreferrer" 
+  className="news-link"
+  onClick={(e) => {
+    e.stopPropagation();  // Impede que o clique chegue ao container pai
+    e.preventDefault();   // Impede o comportamento padrão do link
+    window.open(item.url, '_blank'); // Abre o link em uma nova aba manualmente
+  }}
+>
+  Ler matéria completa
+</a>
                 </div>
               )}
             </div>
