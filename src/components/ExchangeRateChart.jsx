@@ -11,27 +11,27 @@ const ExchangeRateChart = ({ trigger, country }) => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState('buy'); // 'buy' ou 'sell'
+  const [period, setPeriod] = useState('24h');
 
-  // Busca dados para o gráfico
-  const fetchChartData = async () => {
+  // Busca dados históricos para o gráfico
+  const fetchHistoricalData = async () => {
     setLoading(true);
     try {
-      // Buscar cotações atuais
-      const response = await fetch(`${backendUrl}/quotes?country=${country}`, {
-        headers: { 'country': country }
-      });
+      const response = await fetch(
+        `${backendUrl}/historical?country=${country}&period=${period}`, 
+        { headers: { 'country': country } }
+      );
       
       if (!response.ok) {
         throw new Error(`Erro: ${response.statusText}`);
       }
       
-      const quotesData = await response.json();
+      const data = await response.json();
       
-      // Gerar dados históricos simulados baseados nas cotações atuais
-      // (em um cenário real, você buscaria dados históricos de uma API)
-      const historicalData = generateHistoricalData(quotesData);
+      // Formatar dados para o gráfico
+      const formattedData = formatDataForChart(data);
       
-      setChartData(historicalData);
+      setChartData(formattedData);
       setError(null);
     } catch (err) {
       setError(err.message);
@@ -41,55 +41,31 @@ const ExchangeRateChart = ({ trigger, country }) => {
     }
   };
 
-  // Gera dados históricos simulados para demonstração
-  const generateHistoricalData = (quotes) => {
-    // Obtém as últimas 24 horas em intervalos de 1 hora
-    const hours = 24;
-    const data = [];
+  // Formata os dados recebidos da API para o formato esperado pelo Recharts
+  const formatDataForChart = (data) => {
+    const { timestamps, sources } = data;
     
-    for (let i = hours; i >= 0; i--) {
-      const time = new Date();
-      time.setHours(time.getHours() - i);
-      
+    // Cria um array de objetos para o gráfico
+    return timestamps.map((timestamp, index) => {
       const entry = {
-        time: time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        timestamp: time.getTime()
+        time: new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: new Date(timestamp).getTime(),
       };
       
-      // Para cada fonte, gera um valor histórico simulado
-      quotes.forEach(quote => {
-        const sourceName = getSourceName(quote.source);
-        
-        // Simula variação aleatória em torno do valor atual (±3%)
-        const randomFactor = 0.97 + (Math.random() * 0.06);
-        
-        entry[`${sourceName}_buy`] = parseFloat((quote.buy_price * randomFactor).toFixed(4));
-        entry[`${sourceName}_sell`] = parseFloat((quote.sell_price * randomFactor).toFixed(4));
+      // Adiciona dados de cada fonte
+      Object.keys(sources).forEach(sourceName => {
+        entry[`${sourceName}_buy`] = sources[sourceName].buy_prices[index];
+        entry[`${sourceName}_sell`] = sources[sourceName].sell_prices[index];
       });
       
-      data.push(entry);
-    }
-    
-    return data;
-  };
-
-  // Extrai um nome curto da fonte para usar no gráfico
-  const getSourceName = (sourceUrl) => {
-    try {
-      // Extrai o domínio da URL
-      const domain = new URL(sourceUrl).hostname;
-      // Pega a parte principal do domínio (ex: 'wise' de 'wise.com')
-      return domain.split('.')[0];
-    } catch (e) {
-      // Fallback para URLs inválidas
-      return sourceUrl.substring(0, 10);
-    }
+      return entry;
+    });
   };
 
   useEffect(() => {
-    fetchChartData();
+    fetchHistoricalData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [trigger, country]);
+  }, [trigger, country, period]);
 
   // Cores para cada linha do gráfico
   const lineColors = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe'];
@@ -129,6 +105,33 @@ const ExchangeRateChart = ({ trigger, country }) => {
       <h2>Evolução das Cotações</h2>
       
       <div className="chart-controls">
+        <div className="period-selector">
+          <button 
+            className={period === '1h' ? 'active' : ''} 
+            onClick={() => setPeriod('1h')}
+          >
+            1h
+          </button>
+          <button 
+            className={period === '6h' ? 'active' : ''} 
+            onClick={() => setPeriod('6h')}
+          >
+            6h
+          </button>
+          <button 
+            className={period === '12h' ? 'active' : ''} 
+            onClick={() => setPeriod('12h')}
+          >
+            12h
+          </button>
+          <button 
+            className={period === '24h' ? 'active' : ''} 
+            onClick={() => setPeriod('24h')}
+          >
+            24h
+          </button>
+        </div>
+        
         <div className="view-selector">
           <button 
             className={viewMode === 'buy' ? 'active' : ''} 
@@ -187,7 +190,7 @@ const ExchangeRateChart = ({ trigger, country }) => {
       )}
       
       <div className="chart-note">
-        <p>* Dados históricos simulados para demonstração</p>
+        <p>Dados históricos atualizados a cada 30 minutos</p>
       </div>
     </div>
   );
