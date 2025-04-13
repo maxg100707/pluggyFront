@@ -85,7 +85,6 @@ const EconomicNews = ({ trigger, country }) => {
               {expandedNews === index && (
                 <div className="news-content">
                   <p className="news-description">{item.description}</p>
-                  // Modifique a parte do link no componente EconomicNews.jsx
 <a 
   href={item.url} 
    
