@@ -62,12 +62,9 @@ const EconomicNews = ({ trigger, country }) => {
       ) : (
         <div className="news-list">
           {news.map((item, index) => (
-            <div 
-              key={index} 
-              className={`news-item ${expandedNews === index ? 'expanded' : ''}`}
-              onClick={() => toggleExpand(index)}
-            >
-              <div className="news-header">
+            <div key={index} className={`news-item ${expandedNews === index ? 'expanded' : ''}`}>
+              {/* Área clicável para expandir/colapsar */}
+              <div className="news-header" onClick={() => toggleExpand(index)}>
                 {item.imageUrl && (
                   <div className="news-image">
                     <img src={item.imageUrl} alt={item.title} />
@@ -82,22 +79,18 @@ const EconomicNews = ({ trigger, country }) => {
                 </div>
               </div>
               
+              {/* Conteúdo expandido - não recebe o evento de clique para expandir */}
               {expandedNews === index && (
                 <div className="news-content">
                   <p className="news-description">{item.description}</p>
-<a 
-  href={item.url} 
-   
-  rel="noopener noreferrer" 
-  className="news-link"
-  onClick={(e) => {
-    e.stopPropagation();  // Impede que o clique chegue ao container pai
-    e.preventDefault();   // Impede o comportamento padrão do link
-    window.open(item.url, '_blank'); // Abre o link em uma nova aba manualmente
-  }}
->
-  Ler matéria completa
-</a>
+                  <a 
+                    href={item.url} 
+                     
+                    rel="noopener noreferrer" 
+                    className="news-link"
+                  >
+                    Ler matéria completa
+                  </a>
                 </div>
               )}
             </div>
