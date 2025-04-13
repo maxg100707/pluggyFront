@@ -211,12 +211,10 @@ footer {
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.3s ease;
-  cursor: pointer;
 }
 
 .news-item:hover {
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-  transform: translateY(-2px);
 }
 
 .news-item.expanded {
@@ -228,6 +226,11 @@ footer {
   padding: 1rem;
   gap: 1rem;
   align-items: center;
+  cursor: pointer; /* Cursor de ponteiro apenas no cabeçalho */
+}
+
+.news-header:hover {
+  background-color: #f9f9f9; /* Feedback visual ao passar o mouse */
 }
 
 .news-image {
@@ -281,6 +284,7 @@ footer {
   border: 1px solid #4a6cf7;
   border-radius: 4px;
   transition: all 0.2s ease;
+  cursor: pointer; /* Garante que o cursor seja de ponteiro */
 }
 
 .news-link:hover {
