@@ -162,3 +162,29 @@ footer {
   justify-content: center;
   color: #777;
 }
+/* Estilos para seletor de período */
+.period-selector {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.period-selector button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.period-selector button.active {
+  background-color: #4a6cf7;
+  color: white;
+  border-color: #4a6cf7;
+}
+
+.chart-controls {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
