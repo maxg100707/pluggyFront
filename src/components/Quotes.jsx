@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const backendUrl = "https://pluggy.onrender.com"; // Substitua pela URL do seu backend
+const backendUrl = "https://pluggy.onrender.com";
 
 const Quotes = ({ trigger, country }) => {
   const [quotes, setQuotes] = useState([]);
