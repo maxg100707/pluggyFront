@@ -297,3 +297,28 @@ footer {
   text-align: center;
   color: #777;
 }
+/* Estilo para o botão que substitui o link */
+.news-link-button {
+  display: inline-block;
+  color: #4a6cf7;
+  background-color: transparent;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border: 1px solid #4a6cf7;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.news-link-button:hover {
+  background-color: #4a6cf7;
+  color: white;
+}
+
+/* Garantir que o botão não herde estilos indesejados */
+.news-link-button:focus {
+  outline: none;
+}
