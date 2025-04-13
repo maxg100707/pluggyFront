@@ -91,3 +91,74 @@ footer {
   color: #666;
   font-size: 0.8rem;
 }
+
+/* Estilos para o componente de gráfico */
+.chart-card {
+  grid-column: 1 / -1; /* Faz o gráfico ocupar toda a largura */
+}
+
+.chart-container {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.chart-controls {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.view-selector {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.view-selector button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-selector button.active {
+  background-color: #4a6cf7;
+  color: white;
+  border-color: #4a6cf7;
+}
+
+.chart-note {
+  font-size: 0.8rem;
+  color: #777;
+  text-align: right;
+  margin-top: 0.5rem;
+}
+
+.custom-tooltip {
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 0.5rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.tooltip-time {
+  margin: 0;
+  font-weight: bold;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.3rem;
+  margin-bottom: 0.3rem;
+}
+
+.tooltip-items p {
+  margin: 0.2rem 0;
+}
+
+.chart-loading {
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #777;
+}
