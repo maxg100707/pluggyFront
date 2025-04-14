@@ -49,8 +49,11 @@ const ExchangeRateChart = ({ trigger, country }) => {
       // Define se os dados são aproximados
       setIsApproximatedData(data.isApproximated === true);
       
+      // Normaliza os dados antes de formatar para o gráfico
+      const normalizedData = normalizeHistoricalData(data);
+      
       // Formatar dados para o gráfico
-      const formattedData = formatDataForChart(data);
+      const formattedData = formatDataForChart(normalizedData);
       console.log('Dados formatados para o gráfico:', formattedData);
       
       if (formattedData.length === 0) {
@@ -65,6 +68,51 @@ const ExchangeRateChart = ({ trigger, country }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Normaliza os dados históricos para garantir consistência
+  const normalizeHistoricalData = (data) => {
+    const { timestamps, sources } = data;
+    const normalizedSources = {};
+    
+    // Para cada fonte
+    Object.keys(sources).forEach(sourceName => {
+      const sourceData = sources[sourceName];
+      
+      // Cria arrays com o mesmo comprimento do array de timestamps
+      const buy_prices = new Array(timestamps.length).fill(null);
+      const sell_prices = new Array(timestamps.length).fill(null);
+      
+      // Preenche com os valores disponíveis
+      for (let i = 0; i < timestamps.length; i++) {
+        // Se o valor existe e é válido, usamos ele
+        if (sourceData.buy_prices && i < sourceData.buy_prices.length && !isNaN(sourceData.buy_prices[i])) {
+          buy_prices[i] = sourceData.buy_prices[i];
+        } 
+        // Caso contrário, tentamos usar o valor anterior
+        else if (i > 0 && buy_prices[i-1] !== null) {
+          buy_prices[i] = buy_prices[i-1];
+        }
+        
+        // Mesmo processo para os preços de venda
+        if (sourceData.sell_prices && i < sourceData.sell_prices.length && !isNaN(sourceData.sell_prices[i])) {
+          sell_prices[i] = sourceData.sell_prices[i];
+        }
+        else if (i > 0 && sell_prices[i-1] !== null) {
+          sell_prices[i] = sell_prices[i-1];
+        }
+      }
+      
+      normalizedSources[sourceName] = {
+        buy_prices,
+        sell_prices
+      };
+    });
+    
+    return {
+      timestamps,
+      sources: normalizedSources
+    };
   };
 
   // Formata os dados recebidos da API para o formato esperado pelo Recharts
@@ -111,24 +159,13 @@ const ExchangeRateChart = ({ trigger, country }) => {
         Object.keys(sources).forEach(sourceName => {
           const sourceData = sources[sourceName];
           
-          if (sourceData && 
-              Array.isArray(sourceData.buy_prices) && 
-              Array.isArray(sourceData.sell_prices) && 
-              index < sourceData.buy_prices.length && 
-              index < sourceData.sell_prices.length) {
-            
-            const buyPrice = sourceData.buy_prices[index];
-            const sellPrice = sourceData.sell_prices[index];
-            
-            if (!isNaN(buyPrice)) {
-              entry[`${sourceName}_buy`] = buyPrice;
-            }
-            
-            if (!isNaN(sellPrice)) {
-              entry[`${sourceName}_sell`] = sellPrice;
-            }
-          } else {
-            console.warn(`Dados incompletos para fonte ${sourceName} no índice ${index}`);
+          // Adiciona preços de compra/venda se disponíveis
+          if (sourceData.buy_prices[index] !== null) {
+            entry[`${sourceName}_buy`] = sourceData.buy_prices[index];
+          }
+          
+          if (sourceData.sell_prices[index] !== null) {
+            entry[`${sourceName}_sell`] = sourceData.sell_prices[index];
           }
         });
         
@@ -146,7 +183,7 @@ const ExchangeRateChart = ({ trigger, country }) => {
   }, [trigger, country, period]);
 
   // Cores para cada linha do gráfico
-  const lineColors = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe'];
+  const lineColors = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#0088fe', '#ff6b81', '#36a2eb'];
 
   // Determina quais propriedades mostrar com base no modo de visualização
   const getVisibleProperties = () => {
