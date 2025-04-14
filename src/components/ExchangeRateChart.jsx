@@ -13,10 +13,12 @@ const ExchangeRateChart = ({ trigger, country }) => {
   const [viewMode, setViewMode] = useState('buy'); // 'buy' ou 'sell'
   const [period, setPeriod] = useState('24h');
   const [apiResponse, setApiResponse] = useState(null); // Para depuração
+  const [isApproximatedData, setIsApproximatedData] = useState(false);
 
   // Busca dados históricos para o gráfico
   const fetchHistoricalData = async () => {
     setLoading(true);
+    setError(null);
     try {
       console.log(`Buscando dados históricos: ${backendUrl}/historical?country=${country}&period=${period}`);
       
@@ -34,14 +36,18 @@ const ExchangeRateChart = ({ trigger, country }) => {
       
       console.log('Resposta da API histórica:', data);
       
-      // Verifica se a resposta contém os dados esperados
+      // Verifica se a resposta indica erro explícito
       if (data.error) {
         throw new Error(data.message || 'Erro ao carregar dados históricos');
       }
       
+      // Verifica se os dados estão no formato esperado
       if (!data.timestamps || !data.sources || data.timestamps.length === 0 || Object.keys(data.sources).length === 0) {
         throw new Error('Dados históricos incompletos ou vazios');
       }
+      
+      // Define se os dados são aproximados
+      setIsApproximatedData(data.isApproximated === true);
       
       // Formatar dados para o gráfico
       const formattedData = formatDataForChart(data);
@@ -52,7 +58,6 @@ const ExchangeRateChart = ({ trigger, country }) => {
       }
       
       setChartData(formattedData);
-      setError(null);
     } catch (err) {
       console.error('Erro ao buscar dados históricos:', err);
       setError(err.message);
@@ -179,12 +184,98 @@ const ExchangeRateChart = ({ trigger, country }) => {
     const item = chartData.find(d => d.time === tickItem);
     
     // Formatação personalizada baseada no período
-    if (period === '24h' || period === '12h') {
+    if (period === '1h' || period === '6h') {
       return tickItem; // Apenas a hora
     } else {
-      // Para períodos mais longos, incluir a data
-      return item?.date ? `${tickItem} (${item.date.substring(0, 5)})` : tickItem;
+      // Para períodos mais longos, incluir a data se disponível
+      return item && item.date ? `${tickItem}` : tickItem;
     }
+  };
+  
+  // Renderização condicional para o status do gráfico
+  const renderChartStatus = () => {
+    if (error) {
+      return (
+        <div className="chart-error">
+          <p>Erro ao carregar dados do gráfico: {error}</p>
+          <button onClick={fetchHistoricalData} className="retry-button">
+            Tentar novamente
+          </button>
+        </div>
+      );
+    }
+    
+    if (loading) {
+      return <div className="chart-loading">Carregando gráfico...</div>;
+    }
+    
+    if (chartData.length === 0) {
+      return (
+        <div className="chart-no-data">
+          <p>Nenhum dado disponível para o gráfico.</p>
+          <button onClick={fetchHistoricalData} className="retry-button">
+            Tentar novamente
+          </button>
+          {apiResponse && (
+            <details>
+              <summary>Detalhes da resposta (debug)</summary>
+              <pre>{JSON.stringify(apiResponse, null, 2)}</pre>
+            </details>
+          )}
+        </div>
+      );
+    }
+    
+    return (
+      <>
+        <div className="chart-container">
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart
+              data={chartData}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="time" 
+                tick={{ fontSize: 11 }}
+                tickFormatter={formatXAxis}
+                interval="preserveStartEnd"
+              />
+              <YAxis 
+                domain={['auto', 'auto']}
+                tick={{ fontSize: 11 }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend />
+              {getVisibleProperties().map((prop, index) => (
+                <Line
+                  key={prop}
+                  type="monotone"
+                  dataKey={prop}
+                  name={prop.split('_')[0]}
+                  stroke={lineColors[index % lineColors.length]}
+                  activeDot={{ r: 8 }}
+                  dot={{ r: 3 }}
+                  connectNulls={true}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        
+        {isApproximatedData && (
+          <div className="approximated-data-notice">
+            <p>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style={{marginRight: '5px'}}>
+                <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+              </svg>
+              Os dados exibidos são uma aproximação baseada nas cotações atuais.
+              As APIs de dados históricos não estão disponíveis no momento.
+            </p>
+          </div>
+        )}
+      </>
+    );
   };
 
   return (
@@ -235,69 +326,148 @@ const ExchangeRateChart = ({ trigger, country }) => {
         </div>
       </div>
       
-      {error ? (
-        <div className="chart-error">
-          <p>Erro ao carregar dados do gráfico: {error}</p>
-          <button onClick={fetchHistoricalData}>Tentar novamente</button>
-        </div>
-      ) : loading ? (
-        <div className="chart-loading">Carregando gráfico...</div>
-      ) : chartData.length === 0 ? (
-        <div className="chart-no-data">
-          <p>Nenhum dado disponível para o gráfico.</p>
-          <button onClick={fetchHistoricalData}>Tentar novamente</button>
-          {apiResponse && (
-            <details>
-              <summary>Detalhes da resposta (debug)</summary>
-              <pre>{JSON.stringify(apiResponse, null, 2)}</pre>
-            </details>
-          )}
-        </div>
-      ) : (
-        <div className="chart-container">
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart
-              data={chartData}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
-                dataKey="time" 
-                tick={{ fontSize: 11 }}
-                tickFormatter={formatXAxis}
-                interval="preserveStartEnd"
-              />
-              <YAxis 
-                domain={['auto', 'auto']}
-                tick={{ fontSize: 11 }}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              {getVisibleProperties().map((prop, index) => (
-                <Line
-                  key={prop}
-                  type="monotone"
-                  dataKey={prop}
-                  name={prop.split('_')[0]}
-                  stroke={lineColors[index % lineColors.length]}
-                  activeDot={{ r: 8 }}
-                  dot={{ r: 3 }}
-                  connectNulls={true}
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
+      {renderChartStatus()}
       
       <div className="chart-note">
         <p>
-          {period === '24h' ? 'Dados históricos dos últimos dias' : 
-           period === '12h' ? 'Dados históricos das últimas 12 horas' :
-           period === '6h' ? 'Dados históricos das últimas 6 horas' :
-           'Dados históricos da última hora'}
+          {period === '1h' ? 'Dados da última hora' : 
+           period === '6h' ? 'Dados das últimas 6 horas' :
+           period === '12h' ? 'Dados das últimas 12 horas' :
+           'Dados das últimas 24 horas'}
         </p>
       </div>
+      
+      <style jsx>{`
+        .chart-card {
+          background: #fff;
+          border-radius: 8px;
+          padding: 20px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          margin-bottom: 20px;
+        }
+        
+        .chart-controls {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 20px;
+        }
+        
+        .period-selector, .view-selector {
+          display: flex;
+          gap: 8px;
+        }
+        
+        button {
+          background: #f0f0f0;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          padding: 8px 12px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: all 0.2s;
+        }
+        
+        button:hover {
+          background: #e8e8e8;
+        }
+        
+        button.active {
+          background: #4c7daf;
+          color: white;
+          border-color: #3a6186;
+        }
+        
+        .chart-loading, .chart-error, .chart-no-data {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 300px;
+          background: #f9f9f9;
+          border-radius: 8px;
+          color: #666;
+        }
+        
+        .chart-error {
+          color: #d32f2f;
+        }
+        
+        .retry-button {
+          margin-top: 10px;
+          background: #4c7daf;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 4px;
+          cursor: pointer;
+        }
+        
+        .retry-button:hover {
+          background: #3a6186;
+        }
+        
+        .chart-note {
+          text-align: center;
+          color: #666;
+          font-size: 0.85rem;
+          margin-top: 10px;
+        }
+        
+        .custom-tooltip {
+          background: rgba(255, 255, 255, 0.9);
+          border: 1px solid #ccc;
+          border-radius: 4px;
+          padding: 10px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .tooltip-time {
+          margin: 0 0 5px 0;
+          font-weight: bold;
+          border-bottom: 1px solid #eee;
+          padding-bottom: 5px;
+        }
+        
+        .tooltip-items p {
+          margin: 3px 0;
+        }
+        
+        .approximated-data-notice {
+          background: #fff3cd;
+          color: #856404;
+          padding: 10px 15px;
+          border-radius: 4px;
+          margin-top: 10px;
+          font-size: 0.9rem;
+          display: flex;
+          align-items: center;
+        }
+        
+        .approximated-data-notice svg {
+          margin-right: 8px;
+        }
+        
+        details {
+          margin-top: 15px;
+          width: 100%;
+          max-width: 500px;
+        }
+        
+        details summary {
+          cursor: pointer;
+          color: #4c7daf;
+        }
+        
+        details pre {
+          background: #f5f5f5;
+          padding: 10px;
+          border-radius: 4px;
+          overflow: auto;
+          max-height: 300px;
+          margin-top: 10px;
+          font-size: 0.8rem;
+        }
+      `}</style>
     </div>
   );
 };
